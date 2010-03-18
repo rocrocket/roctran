@@ -1,0 +1,9 @@
+roctran can send simple string once.
+
+[20100318]
+[  roc   ]
+[ change ]
+1.finish client and server, and can send simple string from client to server once.
+[  plan  ]
+1.optimize the code,including add conf file.
+2.send a file.
