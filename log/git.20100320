@@ -1,0 +1,10 @@
+roctran can send small file.
+
+[20100320]
+[  roc   ]
+[ change ]
+1.send small file.
+2.rocsend can set options and parameters.
+[  plan  ]
+1.change the transfer way to support sending large file.
+2.optimize the code,including add conf file.
