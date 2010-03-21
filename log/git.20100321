@@ -1,0 +1,12 @@
+roctran can send big file more quickly.
+
+[20100321]
+[  roc   ]
+[ change ]
+1.send and receive big file correctly.
+2.send and receive more quickly.
+3.optimize debug print code.
+4.add Makefile mechanism.
+[  plan  ]
+1.optimize code to simplify it.
+2.server can receive more files from more clients.

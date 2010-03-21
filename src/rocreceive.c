@@ -7,6 +7,7 @@
 #include<sys/types.h>
 #include<errno.h>
 
+#define BUFSIZ_ROC BUFSIZ
 #define DEBUG
 
 /*function:receiver one file from client
@@ -32,42 +33,22 @@ if(read_ret==-1)
 /*==========================*/
 
 /*concatenate two part into one file path*/
-printf("string operation start.\n");
 char file_path[200];
 char *path_p;
 file_path[0]='\0';
 path_p=file_path;
-#ifdef DEBUG
-printf("path_p1:%s\n",path_p);
-#endif
-
 path_p=strncat(path_p,local_path,49);
-#ifdef DEBUG
-printf("path_p2:%s\n",path_p);
-#endif
-
 path_p=strncat(path_p,"/",10);
-#ifdef DEBUG
-printf("path_p3:%s\n",path_p);
-#endif
-
 path_p=strncat(path_p,str_p,50);
-#ifdef DEBUG
-printf("path_p4:%s\n",path_p);
-#endif
 /*=======================================*/
 
 /*open local new file*/
 FILE *fp;
-fp=fopen(path_p,"wb");
+fp=fopen(path_p,"w");
 if(fp==NULL)
 {
 	perror("fopen FATAL");
 	return(2);
-}else{
-	#ifdef DEBUG
-	printf("fopen success!\n");
-	#endif
 }
 /*===================*/
 
@@ -85,53 +66,56 @@ if(read_ret==-1)
 }
 /*==========================*/
 
-/*read file content from client*/
-char *file_buf;
-file_buf=(char *)malloc(file_size);
-if(file_buf==NULL)
-{
-	perror("malloc FATAL");
-	return(4);
-}else{
-	#ifdef DEBUG
-	printf("malloc success!\n");
-	#endif
-}
-read_ret=read(file_des,file_buf,file_size);
-if(read_ret==-1)
-{
-	perror("read FATAL");
-	return(5);
-}else{
-	#ifdef DEBUG
-	//printf("file content:%s\n",file_buf);
-	#endif
-}
-/*=============================*/
-
-/*write to local file*/
+/*repeat read remotely and write locally*/
 size_t fwrite_ret;
-fwrite_ret=fwrite(file_buf,file_size,1,fp);
-if(fwrite_ret==0)
-{
-	perror("fwrite FATAL");
-	return(6);
-}
-/*===================*/
-
-/*close local file*/
+ssize_t write_ret;
+char file_buf[BUFSIZ_ROC];
 int fclose_ret;
-fclose_ret=fclose(fp);
-if(fclose_ret!=0)
-{
-	perror("flcose FATAL");
-	return(7);
-}else{
-	#ifdef DEBUG
-	printf("fclose success!\n");
-	#endif
+char ack_str[]="ROCGOT";
+long long int _file_size=file_size;
+long long int recv_content_size=0;
+while(1){
+	if(_file_size>0){
+		//read content size
+		read_ret=read(file_des,&recv_content_size,sizeof(recv_content_size));
+		if(read_ret==-1){
+			perror("read FATAL");
+			return(9);
+		}
+		//read content
+		read_ret=read(file_des,file_buf,recv_content_size);
+		fwrite_ret=fwrite(file_buf,read_ret,1,fp);
+		if(fwrite_ret==0){
+			perror("fwrite FATAL");
+			return(6);
+		}
+		_file_size-=read_ret;
+		printf("read_ret=%d,_file_size=%d\n",read_ret,_file_size);
+		//send ack
+		write_ret=write(file_des,ack_str,sizeof(ack_str));
+		if(write_ret==-1){
+			perror("write FATAL");
+			return(7);
+		}
+
+	}else if(_file_size==0){
+		fclose_ret=fclose(fp);
+		if(fclose_ret!=0)
+		{
+			perror("flcose FATAL");
+			return(8);
+		}else{
+			#ifdef DEBUG
+			printf("fclose success!\n");
+			#endif
+			break;
+		}
+	}else{
+		printf("Error happened during transfer.");
+		return(9);
+	}
 }
-/*================*/
+/*======================================*/
 return(0);
 }
 
