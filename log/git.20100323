@@ -1,0 +1,13 @@
+roctran can receive more files from more clients.
+
+[20100323]
+[  roc   ]
+[ change ]
+1.server can receive more files from more clients.
+2.add usage function.
+3.optimize output content.
+4.add head file.
+[  plan  ]
+1.add signal mechanism in rocreceive when ctrl-c.
+2.optimize output content.
+3.support folder transfer.

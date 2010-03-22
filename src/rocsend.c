@@ -1,22 +1,25 @@
-#include<unistd.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<sys/types.h>
-#include<sys/socket.h>
-#include<sys/stat.h>
-#include<errno.h>
-#include<netinet/in.h>
-#include<string.h>
-#include<libgen.h>
-
-#define MAX_NUM_OPTIONS 48
-#define BUFSIZ_ROC BUFSIZ
-#define DEBUG
+#include "roctran.h"
 
 /*global variable*/
 //the file path which you want to send
 char file_path[1023];
 /*===============*/
+
+/*usage function*/
+void usage()
+{
+        time_t mytime;
+        struct tm *mylocaltime;
+        mytime=time(NULL);
+        mylocaltime=localtime(&mytime);
+	char usage_str[]="rocsend - roctran tool\r\n\
+===\n\
+usage:\n\
+./rocsend -f path/to/file\n\
+===\n";
+        printf("%s%s%d\n",usage_str,"rocrocket@",mylocaltime->tm_year+1900);
+}
+/*==============*/
 
 /*cope with options and parameters*/
 int parseOptions(int argc,char *argv[])
@@ -25,9 +28,7 @@ int parseOptions(int argc,char *argv[])
 	char *_argv[MAX_NUM_OPTIONS];
 	int opt;//opt:return value of function "pareseOptions"
 
-	if((argc==2)&&(argv[1][0]!='-')){
-		//read the specified file
-		printf("Wrong command format.\n");
+	if((argc==1)||((argc==2)&&(argv[1][0]!='-'))){
 		return(1);
 	}else{
 		int i;
@@ -44,7 +45,7 @@ int parseOptions(int argc,char *argv[])
 				strcpy(file_path,optarg);
 				break;
 			default:
-				printf("Help information");
+				usage();
 		}
 	}
 	return(0);
@@ -57,7 +58,7 @@ int main(int argc,char *argv[])
 	int parse_ret;
 	parse_ret=parseOptions(argc,argv);
 	if(parse_ret!=0){
-		printf("parseOptions return %d\n",parse_ret);
+		usage();
 		exit(7);
 	}
 	/*================================*/
