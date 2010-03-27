@@ -1,0 +1,11 @@
+roctran support folder transfer.
+
+[20100328]
+[  roc   ]
+[ change ]
+1.support folder transfer.
+2.add ctags mechanism which let coding more convenient.
+3.add several function to optimize code.
+[  plan  ]
+1.optimize code,to add more function.
+2.add signal mechanism in rocreceive when ctrl-c.

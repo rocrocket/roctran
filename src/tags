@@ -1,0 +1,24 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+APPENDIX	Makefile	/^APPENDIX = $/;"	m
+BUFSIZ_ROC	roctran.h	14;"	d
+CC	Makefile	/^CC = cc$/;"	m
+DEBUG	roctran.h	16;"	d
+LIBLIST	Makefile	/^LIBLIST = $/;"	m
+MAX_NUM_OPTIONS	roctran.h	15;"	d
+file_path	rocsend.c	/^char file_path[1023];$/;"	v
+g_listen_port	rocreceive.c	/^int g_listen_port=0;$/;"	v
+main	rocreceive.c	/^int main(int argc,char *argv[])$/;"	f
+main	rocsend.c	/^int main(int argc,char *argv[])$/;"	f
+parseOptions	rocreceive.c	/^int parseOptions(int argc,char *argv[])$/;"	f
+parseOptions	rocsend.c	/^int parseOptions(int argc,char *argv[])$/;"	f
+receive_file	rocreceive.c	/^int receive_file(int socket_fd,char *local_path)$/;"	f
+send_dir	rocsend.c	/^int send_dir(int socket_fd,char *file_path)$/;"	f
+send_file	rocsend.c	/^int send_file(int socket_fd,char *file_path)$/;"	f
+send_one_dir	rocsend.c	/^int send_one_dir(int socket_fd,char *dir_path)$/;"	f
+usage	rocreceive.c	/^void usage()$/;"	f
+usage	rocsend.c	/^void usage()$/;"	f

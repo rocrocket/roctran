@@ -56,25 +56,74 @@ int parseOptions(int argc,char *argv[])
 }
 /*================================*/
 
+/*{send acknowledge to client*/
+int send_ack(int socket_fd)
+{
+	char ack_str[]="ROCGOT";
+	int write_ret;
+	write_ret=write(socket_fd,ack_str,sizeof(ack_str));	
+	if(write_ret==-1){             
+		perror("write FATAL"); 
+		return(1);
+	}
+	return(0);
+}
+/*==========================}*/
 
 /*function:receiver one file from client
  * param1:file descriptor
  * param2:the local storing file path
+ * return value:
+ * 	 0:transfer correct and go on.
+ * 	88:transfer finish.
 */
 int receive_file(int socket_fd,char *local_path)
 {
-	/*read file name from client*/
-	char file_name[1023],*str_p;
-	str_p=file_name;
+	/*{read file type from client*/
 	ssize_t read_ret;
-	read_ret=read(socket_fd,str_p,sizeof(file_name));
+	int file_type=99;
+        /* 1:regular file
+	 * 2:folder file
+	 * 3:soft link file
+	 * 4:pipe file
+	 * 88:transfer finish
+	 * 99:unknown type*/
+
+	read_ret=read(socket_fd,&file_type,sizeof(file_type));	
 	if(read_ret==-1)
 	{
 		perror("read FATAL");
 		return(1);
 	}else{
 		#ifdef DEBUG
-		printf("filename:%s\n",str_p);
+		printf("file type:%d\n",file_type);
+		#endif
+
+		if(file_type==88){
+			//send ack
+                        int send_ack_ret;              
+                        send_ack_ret=send_ack(socket_fd);
+                        if(send_ack_ret!=0){           
+                                printf("send_ack FATAL");      
+                                return(2);                     
+                        }
+			/*transfer finish*/
+			return(88);	
+		}
+	}
+	/*==========================}*/
+	
+	/*read file name from client*/
+	char file_name[1023],*str_p;
+	str_p=file_name;
+	read_ret=read(socket_fd,str_p,sizeof(file_name));
+	if(read_ret==-1)
+	{
+		perror("read FATAL");
+		return(3);
+	}else{
+		#ifdef DEBUG
+		printf("file name:%s\n",str_p);
 		#endif
 	}
 	/*==========================*/
@@ -89,13 +138,34 @@ int receive_file(int socket_fd,char *local_path)
 	path_p=strncat(path_p,str_p,50);
 	/*=======================================*/
 
+	/*{when file type is folder*/
+	if(file_type==2){
+		int mkdir_ret;
+		mkdir_ret=mkdir(file_path,S_IRUSR | S_IWUSR | S_IXUSR);
+		if(mkdir_ret==-1){
+			perror("mkdir FATAL");
+			return(4);	
+		}else{
+			//send_ack
+                        int send_ack_ret;              
+                        send_ack_ret=send_ack(socket_fd);
+                        if(send_ack_ret!=0){           
+                                printf("send_ack FATAL");      
+                                return(5);
+                        }else{
+				return(0);
+			}
+		}
+	}
+	/*========================}*/
+
 	/*open local new file*/
 	FILE *fp;
+	printf("path_p=%s\n",path_p);
 	fp=fopen(path_p,"w");
-	if(fp==NULL)
-	{
+	if(fp==NULL){
 		perror("fopen FATAL");
-		return(2);
+		return(6);
 	}
 	/*===================*/
 
@@ -105,7 +175,7 @@ int receive_file(int socket_fd,char *local_path)
 	if(read_ret==-1)
 	{
 		perror("read FATAL");
-		return(3);
+		return(7);
 	}else{
 		#ifdef DEBUG
 		printf("file size:%lld\n",file_size);
@@ -118,7 +188,6 @@ int receive_file(int socket_fd,char *local_path)
 	ssize_t write_ret;
 	char file_buf[BUFSIZ_ROC];
 	int fclose_ret;
-	char ack_str[]="ROCGOT";
 	long long int _file_size=file_size;
 	long long int recv_content_size=0;
 	while(1){
@@ -127,30 +196,41 @@ int receive_file(int socket_fd,char *local_path)
 			read_ret=read(socket_fd,&recv_content_size,sizeof(recv_content_size));
 			if(read_ret==-1){
 				perror("read FATAL");
-				return(9);
+				return(8);
+			}else{
+				#ifdef DEBUG
+				printf("recv_content_size=%d\n",recv_content_size);
+				#endif
 			}
 			//read content
 			read_ret=read(socket_fd,file_buf,recv_content_size);
 			fwrite_ret=fwrite(file_buf,read_ret,1,fp);
 			if(fwrite_ret==0){
 				perror("fwrite FATAL");
-				return(6);
+				return(9);
+			}else{
+				#ifdef DEBUG
+				printf("fwrite locally successfully\n");
+				#endif
 			}
 			_file_size-=read_ret;
-			//printf("read_ret=%d,_file_size=%d\n",read_ret,_file_size);
 			//send ack
-			write_ret=write(socket_fd,ack_str,sizeof(ack_str));
-			if(write_ret==-1){
-				perror("write FATAL");
-				return(7);
+			int send_ack_ret;
+			send_ack_ret=send_ack(socket_fd);
+			if(send_ack_ret!=0){
+				printf("send_ack FATAL");
+				return(10);
+			}else{
+				#ifdef DEBUG
+				printf("send ack\n");
+				#endif	
 			}
-
 		}else if(_file_size==0){
 			fclose_ret=fclose(fp);
 			if(fclose_ret!=0)
 			{
 				perror("flcose FATAL");
-				return(8);
+				return(11);
 			}else{
 				#ifdef DEBUG
 				printf("fclose success!\n");
@@ -159,7 +239,7 @@ int receive_file(int socket_fd,char *local_path)
 			}
 		}else{
 			printf("Error happened during transfer.");
-			return(9);
+			return(12);
 		}
 	}
 	/*======================================*/
@@ -245,11 +325,15 @@ int main(int argc,char *argv[])
 		}else if(pid==0){ //child process
 			close(socket_fd);
 			int receive_ret;
-			receive_ret=receive_file(newsocket_fd,".");
-			if(receive_ret!=0)
-			{
-				printf("receive_file failed.ret=%d\n",receive_ret);
-				exit(5);
+			while(1){
+				receive_ret=receive_file(newsocket_fd,".");
+				if(receive_ret==88){
+					/*88:finish transfer*/
+					break;
+				}else if(receive_ret!=0){
+					printf("receive_file failed.ret=%d\n",receive_ret);
+					exit(5);
+				}
 			}
 			close(newsocket_fd);
 			return(0);
