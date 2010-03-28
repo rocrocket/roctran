@@ -13,17 +13,17 @@ int all_client_num=0;
 /*===============*/
 
 /*usage function*/
-void usage()
+void receive_usage()
 {
 	time_t mytime;
         struct tm *mylocaltime;
 	mytime=time(NULL);
         mylocaltime=localtime(&mytime);
 	char usage_str[]="rocreceive - roctran tool\n\
-===\n\
-usage:\n\
-./rocreceive -p PORT\n\
-===\n";
+	\r===\n\
+	\rusage:\n\
+	\r./rocreceive -p PORT\n\
+	\r===\n";
 	printf("%s%s%d\n",usage_str,"rocrocket@",mylocaltime->tm_year+1900);
 	
 }
@@ -63,7 +63,7 @@ int parseOptions(int argc,char *argv[])
                 switch(opt){
                         case 'p':
 				g_listen_port=atoi(optarg);
-                                printf("optarg:%d\n",g_listen_port);
+                                printf("listen port:%d\n",g_listen_port);
                                 break;
                         default:
 				return(1);
@@ -160,25 +160,31 @@ int receive_file(int socket_fd,char *local_path)
 		int mkdir_ret;
 		mkdir_ret=mkdir(file_path,S_IRUSR | S_IWUSR | S_IXUSR);
 		if(mkdir_ret==-1){
-			perror("mkdir FATAL");
-			return(4);	
-		}else{
-			//send_ack
-                        int send_ack_ret;              
-                        send_ack_ret=send_ack(socket_fd);
-                        if(send_ack_ret!=0){           
-                                printf("send_ack FATAL");      
-                                return(5);
-                        }else{
-				return(0);
+			if(errno==EEXIST){
+
+			}else{
+				perror("mkdir FATAL");
+				return(4);	
 			}
 		}
+		//send_ack
+		int send_ack_ret;              
+		send_ack_ret=send_ack(socket_fd);
+		if(send_ack_ret!=0){           
+			printf("send_ack FATAL");      
+			return(5);
+		}else{
+			return(0);
+		}
+		
 	}
 	/*========================}*/
 
 	/*open local new file*/
 	FILE *fp;
+	#ifdef DEBUG
 	printf("path_p=%s\n",path_p);
+	#endif
 	fp=fopen(path_p,"w");
 	if(fp==NULL){
 		perror("fopen FATAL");
@@ -271,7 +277,7 @@ int main(int argc,char *argv[])
         int parse_ret;
         parse_ret=parseOptions(argc,argv);
         if(parse_ret!=0){
-		usage();
+		receive_usage();
                 exit(7);
         }
         /*================================*/
@@ -285,6 +291,11 @@ int main(int argc,char *argv[])
 	#ifdef DEBUG
 		printf("socket init success\n");
 	#endif
+
+	/*{set socket option*/
+	int opt=1;
+	setsockopt(socket_fd,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(opt));
+	/*=================}*/
 
 	/*address setup*/
 	struct sockaddr_in server_addr;

@@ -5,23 +5,40 @@
 //the file path which you want to send
 char file_path[1023];
 
+//the server IP address
+char server_ip[20];
+
+//the server port number
+int server_port=0;
+
 //socket initial file descriptor for client
 int socket_fd;
 
+//total send bytes
+long long int total_send_bytes=0;
+
+//total receive bytes
+long long int total_recv_bytes=0;
+
+//total file number
+int total_file_number=0;
+
+//total dir number
+int total_dir_number=0;
 /*===============*/
 
 /*usage function*/
-void usage()
+void send_usage()
 {
         time_t mytime;
         struct tm *mylocaltime;
         mytime=time(NULL);
         mylocaltime=localtime(&mytime);
 	char usage_str[]="rocsend - roctran tool\r\n\
-===\n\
-usage:\n\
-./rocsend -f path/to/file\n\
-===\n";
+	\r===\n\
+	\rusage:\n\
+	\r./rocsend -f path/to/file -p server_port -i server_ip\n\
+	\r===\n";
         printf("%s%s%d\n",usage_str,"rocrocket@",mylocaltime->tm_year+1900);
 }
 /*==============*/
@@ -29,11 +46,18 @@ usage:\n\
 /*{signal catch*/
 void finishup(int signo)
 {
+	sleep(1);
 	close(socket_fd);		
 	printf("\n");	
-	printf("Receive Ctrl-C.\n");	
-	printf("Goodbye!\n");	
-	sleep(1);
+	if(signo!=0){
+		printf("Receive Ctrl-C.\n");	
+	}
+	printf("====STATISTICS====\n");	
+	printf("total file number:%d\n",total_file_number);	
+	printf("total dir  number:%d\n",total_dir_number);	
+	printf("total send bytes :%lld\n",total_send_bytes);	
+	printf("total recv bytes :%lld\n",total_recv_bytes);	
+	printf("=====GOODBYE!=====\n");	
 	exit(0);
 }
 /*============}*/
@@ -41,9 +65,10 @@ void finishup(int signo)
 /*cope with options and parameters*/
 int parseOptions(int argc,char *argv[])
 {
+	int f_flag=0,p_flag=0,i_flag=0;
 	int _argc;
 	char *_argv[MAX_NUM_OPTIONS];
-	int opt;//opt:return value of function "pareseOptions"
+	int opt;//opt:return value of function "parseOptions"
 
 	if((argc==1)||((argc==2)&&(argv[1][0]!='-'))){
 		return(1);
@@ -55,15 +80,35 @@ int parseOptions(int argc,char *argv[])
 		}
 	}
 	optarg=NULL;
-	while((opt=getopt(_argc,_argv,"f:h"))!=EOF){
+	while((opt=getopt(_argc,_argv,"f:p:i:h"))!=EOF){
 		switch(opt){
 			case 'f':
-				printf("optarg:%s\n",optarg);
+				#ifdef DEBUG
+				printf("-f:%s\n",optarg);
+				#endif
 				strcpy(file_path,optarg);
+				f_flag=1;
+				break;
+			case 'p':
+				#ifdef DEBUG
+				printf("-p:%s\n",optarg);
+				#endif
+				server_port=atoi(optarg);
+				p_flag=1;
+				break;
+			case 'i':
+				#ifdef DEBUG
+				printf("-i:%s\n",optarg);
+				#endif
+				strcpy(server_ip,optarg);
+				i_flag=1;
 				break;
 			default:
-				usage();
+				return(1);
 		}
+	}
+	if((p_flag==0)||(i_flag==0)||(f_flag==0)){
+		return(1);
 	}
 	return(0);
 }
@@ -106,7 +151,12 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
         {
                 perror("write FATAL");
 		return(3);
-        }
+        }else{
+		#ifdef DEBUG
+		printf("send file type to server successfully.\n");
+		#endif
+		total_send_bytes+=write_ret;
+	}
 	/*========================}*/
 
 	/*{send file name to server*/
@@ -124,6 +174,7 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
 		#ifdef DEBUG
 		printf("send file name successfully.\n");
 		#endif
+		total_send_bytes+=write_ret;
 	}
         /*========================}*/
 
@@ -132,11 +183,12 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
         if(write_ret==-1)
         {
                 perror("write FATAL");
-                exit(8);
+                return(8);
         }else{
 		#ifdef DEBUG
 		printf("send file size successfully.\n");
 		#endif
+		total_send_bytes+=write_ret;
 	}
 	/*========================}*/
 
@@ -173,6 +225,8 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
 			{
 				perror("write FATAL");
 				return(5);
+			}else{
+				total_send_bytes+=write_ret;
 			}
 			//send content to remote server
 			write_ret=write(socket_fd,file_content,send_content_size);
@@ -182,7 +236,10 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
 				return(6);
 			}else{
 				_file_size-=BUFSIZ_ROC;
+				#ifdef DEBUG
 				printf("send to server %d bytes.\n",write_ret);
+				#endif
+				total_send_bytes+=write_ret;
 			}
 			//recv ack
 			read_ret=read(socket_fd,recv_ack,sizeof(recv_ack));
@@ -190,8 +247,11 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
 				perror("read FATAL");
 				return(7);
 			}else{
+				total_recv_bytes+=read_ret;
 				if(strcmp(recv_ack,ack_str)==0){
+					#ifdef DEBUG
 					printf("receive ROCGOT\n");
+					#endif
 				}else{
 					printf("ERROR:do not receive ROCGOT\n");
 					return(8);
@@ -204,7 +264,6 @@ int send_file(int socket_fd,char *dir_path,char *file_path)
 		}
 	}
 	/*===========================}*/
-
 }
 /*=======================}*/
 
@@ -219,7 +278,9 @@ int send_one_dir(int socket_fd,char *base_dir_path,char *dir_path)
         {
                 perror("write FATAL");
                 return(3);
-        }
+        }else{
+		total_send_bytes+=write_ret;
+	}
         /*========================}*/
 
         /*{send dir name to server*/
@@ -234,7 +295,9 @@ int send_one_dir(int socket_fd,char *base_dir_path,char *dir_path)
         {
                 perror("write FATAL");
                 return(1);
-        }
+        }else{
+		total_send_bytes+=write_ret;
+	}
         /*========================}*/
 
 	/*{recv ack*/
@@ -245,6 +308,7 @@ int send_one_dir(int socket_fd,char *base_dir_path,char *dir_path)
 		perror("read FATAL");
 		return(7);
 	}else{
+		total_recv_bytes+=read_ret;
 		if(strcmp(recv_ack,ack_str)==0){
 			printf("receive ROCGOT\n");
 			return(0);
@@ -270,6 +334,8 @@ int send_finish_signal(int socket_fd)
 	{
 		perror("write FATAL");
 		return(2);
+	}else{
+		total_send_bytes+=write_ret;
 	}
 
 	/*{recv ack*/
@@ -280,6 +346,7 @@ int send_finish_signal(int socket_fd)
 		perror("read FATAL");
 		return(3);
 	}else{
+		total_recv_bytes+=read_ret;
 		if(strcmp(recv_ack,ack_str)==0){
                         printf("receive ROCGOT\n");    
                         return(0);                     
@@ -345,6 +412,8 @@ int send_dir(int socket_fd,char *dir_path,char *file_path)
 		if(send_one_dir_ret!=0){
 			printf("send_one_dir FATAL\n");
 			return(3);
+		}else{
+			total_dir_number+=1;
 		}
 		if((dp=opendir(abs_p))==NULL){
 			perror("opendir error");
@@ -376,7 +445,14 @@ int send_dir(int socket_fd,char *dir_path,char *file_path)
 			}
 		}
 	}else if(file_type==1){
-		send_file(socket_fd,dir_path,file_path);
+		int send_file_ret;
+		send_file_ret=send_file(socket_fd,dir_path,file_path);
+		if(send_file_ret!=0){
+			printf("send_file return value:%d\n",send_file_ret);
+			return(5);
+		}else{
+			total_file_number+=1;
+		}
 		return(0);
 	}
 }
@@ -389,7 +465,7 @@ int main(int argc,char *argv[])
 	int parse_ret;
 	parse_ret=parseOptions(argc,argv);
 	if(parse_ret!=0){
-		usage();
+		send_usage();
 		exit(7);
 	}
 	/*================================*/
@@ -410,7 +486,6 @@ int main(int argc,char *argv[])
 	/*address setup*/
 	struct sockaddr_in client_addr;
 	struct in_addr inp;
-	char server_ip[]="127.0.0.1";
 	int inet_ret;
 	//clear the structure
 	memset(&client_addr,0,sizeof(struct sockaddr_in));
@@ -468,7 +543,6 @@ int main(int argc,char *argv[])
 	}
 	/*============================}*/
 
-	close(socket_fd);
-	printf("Goodbye!\n");
+	finishup(0);
 	return(0);
 }

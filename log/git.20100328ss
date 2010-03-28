@@ -1,0 +1,12 @@
+roctran optimize more.
+
+[20100328]
+[  roc   ]
+[ change ]
+1.add more statistics infomation in finishup function.
+2.add ip and port parameter setup in rocsend.
+3.use reuseaddr socket option in rocreceive.
+4.support mkdir when dir already exists.
+[  plan  ]
+1.add permission and owner info transfer.
+2.add process bar when transfer file.
