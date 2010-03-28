@@ -10,6 +10,7 @@
 #include<libgen.h>
 #include<time.h>
 #include<dirent.h>
+#include<signal.h>
 
 #define BUFSIZ_ROC 4000
 #define MAX_NUM_OPTIONS 48

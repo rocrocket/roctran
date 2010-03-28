@@ -1,8 +1,13 @@
 #include "roctran.h"
 
 /*global variable*/
+
 //the file path which you want to send
 char file_path[1023];
+
+//socket initial file descriptor for client
+int socket_fd;
+
 /*===============*/
 
 /*usage function*/
@@ -20,6 +25,18 @@ usage:\n\
         printf("%s%s%d\n",usage_str,"rocrocket@",mylocaltime->tm_year+1900);
 }
 /*==============*/
+
+/*{signal catch*/
+void finishup(int signo)
+{
+	close(socket_fd);		
+	printf("\n");	
+	printf("Receive Ctrl-C.\n");	
+	printf("Goodbye!\n");	
+	sleep(1);
+	exit(0);
+}
+/*============}*/
 
 /*cope with options and parameters*/
 int parseOptions(int argc,char *argv[])
@@ -366,6 +383,8 @@ int send_dir(int socket_fd,char *dir_path,char *file_path)
 
 int main(int argc,char *argv[])
 {
+	signal(SIGINT,finishup);	
+
 	/*cope with options and parameters*/
 	int parse_ret;
 	parse_ret=parseOptions(argc,argv);
@@ -375,8 +394,6 @@ int main(int argc,char *argv[])
 	}
 	/*================================*/
 
-	/*socket initial file descriptor for client*/
-	int socket_fd;
 
 	/*socket initialize*/
 	socket_fd=socket(AF_INET,SOCK_STREAM,0);

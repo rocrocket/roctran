@@ -5,6 +5,11 @@
 //listen port
 int g_listen_port=0;
 
+//socket descriptor
+int socket_fd;
+
+//client number record	
+int all_client_num=0;
 /*===============*/
 
 /*usage function*/
@@ -23,6 +28,18 @@ usage:\n\
 	
 }
 /*==============*/
+
+/*{signal catch*/
+void finishup(int signo)
+{
+	close(socket_fd);
+	printf("\n");
+	printf("====STATISICS====\n");
+	printf("client number:%d\n",all_client_num);
+	printf("=====GOODBYE=====\n");
+	exit(0);
+}
+/*============}*/
 
 /*cope with options and parameters*/
 int parseOptions(int argc,char *argv[])
@@ -129,13 +146,13 @@ int receive_file(int socket_fd,char *local_path)
 	/*==========================*/
 
 	/*concatenate two part into one file path*/
-	char file_path[200];
+	char file_path[1023];
 	char *path_p;
 	file_path[0]='\0';
 	path_p=file_path;
-	path_p=strncat(path_p,local_path,49);
+	path_p=strncat(path_p,local_path,300);
 	path_p=strncat(path_p,"/",10);
-	path_p=strncat(path_p,str_p,50);
+	path_p=strncat(path_p,str_p,300);
 	/*=======================================*/
 
 	/*{when file type is folder*/
@@ -248,6 +265,8 @@ int receive_file(int socket_fd,char *local_path)
 
 int main(int argc,char *argv[])
 {
+	signal(SIGINT,finishup);
+
         /*cope with options and parameters*/
         int parse_ret;
         parse_ret=parseOptions(argc,argv);
@@ -257,7 +276,6 @@ int main(int argc,char *argv[])
         }
         /*================================*/
 
-	int socket_fd;
 	socket_fd=socket(AF_INET,SOCK_STREAM,0);
 	if(socket_fd==-1)
 	{
@@ -306,7 +324,6 @@ int main(int argc,char *argv[])
 	/*accept operation*/
 	int newsocket_fd;
 	pid_t pid;
-	int all_client_num=0;
 	while(1){
 		newsocket_fd=accept(socket_fd,NULL,NULL);
 		if(newsocket_fd==-1)
@@ -340,11 +357,4 @@ int main(int argc,char *argv[])
 		}
 	}
 	/*================*/
-
-	/*close the fd*/
-	close(socket_fd);
-	/*============*/
-	printf("client number:%d\n",all_client_num);
-	printf("good bye!\n");
-	return(0);
 }

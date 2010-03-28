@@ -17,8 +17,10 @@ main	rocsend.c	/^int main(int argc,char *argv[])$/;"	f
 parseOptions	rocreceive.c	/^int parseOptions(int argc,char *argv[])$/;"	f
 parseOptions	rocsend.c	/^int parseOptions(int argc,char *argv[])$/;"	f
 receive_file	rocreceive.c	/^int receive_file(int socket_fd,char *local_path)$/;"	f
-send_dir	rocsend.c	/^int send_dir(int socket_fd,char *file_path)$/;"	f
-send_file	rocsend.c	/^int send_file(int socket_fd,char *file_path)$/;"	f
-send_one_dir	rocsend.c	/^int send_one_dir(int socket_fd,char *dir_path)$/;"	f
+send_ack	rocreceive.c	/^int send_ack(int socket_fd)$/;"	f
+send_dir	rocsend.c	/^int send_dir(int socket_fd,char *dir_path,char *file_path)$/;"	f
+send_file	rocsend.c	/^int send_file(int socket_fd,char *dir_path,char *file_path)$/;"	f
+send_finish_signal	rocsend.c	/^int send_finish_signal(int socket_fd)$/;"	f
+send_one_dir	rocsend.c	/^int send_one_dir(int socket_fd,char *base_dir_path,char *dir_path)$/;"	f
 usage	rocreceive.c	/^void usage()$/;"	f
 usage	rocsend.c	/^void usage()$/;"	f

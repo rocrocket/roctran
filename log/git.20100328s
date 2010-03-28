@@ -1,0 +1,13 @@
+roctran support signal mechanism.
+
+[20100328]
+[  roc   ]
+[ change ]
+1.support signal mechanism.
+2.fix a file name length bug.
+3.add finishup function.
+[  plan  ]
+1.add permission info transfer.
+2.add more statistics infomation in finishup function.
+3.add process bar when transfer file.
+4.add ip and port parameter setup in rocsend.
