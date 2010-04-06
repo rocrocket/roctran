@@ -5,22 +5,49 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
 APPENDIX	Makefile	/^APPENDIX = $/;"	m
-BUFSIZ_ROC	roctran.h	14;"	d
-CC	Makefile	/^CC = cc$/;"	m
-DEBUG	roctran.h	16;"	d
+BUFSIZ_ROC	roctran.h	15;"	d
+CC	Makefile	/^CC = cc -g$/;"	m
+DEBUG	roctran.h	17;"	d
 LIBLIST	Makefile	/^LIBLIST = $/;"	m
-MAX_NUM_OPTIONS	roctran.h	15;"	d
+MAX_NUM_OPTIONS	roctran.h	16;"	d
+all_client_num	rocreceive.c	/^int all_client_num=0;$/;"	v
+consult_message	roctran.h	/^struct consult_message{$/;"	s
+file_group	rocsend.c	/^gid_t file_group=0;$/;"	v
+file_owner	rocsend.c	/^uid_t file_owner=0;$/;"	v
 file_path	rocsend.c	/^char file_path[1023];$/;"	v
+finishup	rocreceive.c	/^void finishup(int signo)$/;"	f
+finishup	rocsend.c	/^void finishup(int signo)$/;"	f
 g_listen_port	rocreceive.c	/^int g_listen_port=0;$/;"	v
+group_r	roctran.h	/^	unsigned group_r:1;$/;"	m	struct:consult_message
+group_w	roctran.h	/^	unsigned group_w:1;$/;"	m	struct:consult_message
+group_x	roctran.h	/^	unsigned group_x:1;$/;"	m	struct:consult_message
+keep_group	roctran.h	/^	unsigned keep_group:1;$/;"	m	struct:consult_message
+keep_owner	roctran.h	/^	unsigned keep_owner:1;$/;"	m	struct:consult_message
+keep_permission	roctran.h	/^	unsigned keep_permission:1;$/;"	m	struct:consult_message
 main	rocreceive.c	/^int main(int argc,char *argv[])$/;"	f
 main	rocsend.c	/^int main(int argc,char *argv[])$/;"	f
+other_r	roctran.h	/^	unsigned other_r:1;$/;"	m	struct:consult_message
+other_w	roctran.h	/^	unsigned other_w:1;$/;"	m	struct:consult_message
+other_x	roctran.h	/^	unsigned other_x:1;$/;"	m	struct:consult_message
+owner_r	roctran.h	/^	unsigned owner_r:1;$/;"	m	struct:consult_message
+owner_w	roctran.h	/^	unsigned owner_w:1;$/;"	m	struct:consult_message
+owner_x	roctran.h	/^	unsigned owner_x:1;$/;"	m	struct:consult_message
 parseOptions	rocreceive.c	/^int parseOptions(int argc,char *argv[])$/;"	f
 parseOptions	rocsend.c	/^int parseOptions(int argc,char *argv[])$/;"	f
 receive_file	rocreceive.c	/^int receive_file(int socket_fd,char *local_path)$/;"	f
+receive_usage	rocreceive.c	/^void receive_usage()$/;"	f
 send_ack	rocreceive.c	/^int send_ack(int socket_fd)$/;"	f
+send_consult	rocsend.c	/^struct consult_message send_consult={0,0,0,0,0,0,0,0,0,0,0,0};$/;"	v	typeref:struct:consult_message
 send_dir	rocsend.c	/^int send_dir(int socket_fd,char *dir_path,char *file_path)$/;"	f
 send_file	rocsend.c	/^int send_file(int socket_fd,char *dir_path,char *file_path)$/;"	f
 send_finish_signal	rocsend.c	/^int send_finish_signal(int socket_fd)$/;"	f
 send_one_dir	rocsend.c	/^int send_one_dir(int socket_fd,char *base_dir_path,char *dir_path)$/;"	f
-usage	rocreceive.c	/^void usage()$/;"	f
-usage	rocsend.c	/^void usage()$/;"	f
+send_usage	rocsend.c	/^void send_usage()$/;"	f
+server_ip	rocsend.c	/^char server_ip[20];$/;"	v
+server_port	rocsend.c	/^int server_port=0;$/;"	v
+socket_fd	rocreceive.c	/^int socket_fd;$/;"	v
+socket_fd	rocsend.c	/^int socket_fd;$/;"	v
+total_dir_number	rocsend.c	/^int total_dir_number=0;$/;"	v
+total_file_number	rocsend.c	/^int total_file_number=0;$/;"	v
+total_recv_bytes	rocsend.c	/^long long int total_recv_bytes=0;$/;"	v
+total_send_bytes	rocsend.c	/^long long int total_send_bytes=0;$/;"	v

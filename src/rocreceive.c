@@ -50,7 +50,7 @@ int parseOptions(int argc,char *argv[])
 
         if((argc==1)||((argc==2)&&(argv[1][0]!='-'))){
                 //read the specified file
-                return(2);
+                return(1);
         }else{  
                 int i;
                 _argc=(argc>=MAX_NUM_OPTIONS)?(MAX_NUM_OPTIONS-1):argc;
@@ -66,7 +66,7 @@ int parseOptions(int argc,char *argv[])
                                 printf("listen port:%d\n",g_listen_port);
                                 break;
                         default:
-				return(1);
+				return(2);
                 }
         }
         return(0);
@@ -81,7 +81,7 @@ int send_ack(int socket_fd)
 	write_ret=write(socket_fd,ack_str,sizeof(ack_str));	
 	if(write_ret==-1){             
 		perror("write FATAL"); 
-		return(1);
+		return(3);
 	}
 	return(0);
 }
@@ -96,8 +96,22 @@ int send_ack(int socket_fd)
 */
 int receive_file(int socket_fd,char *local_path)
 {
-	/*{read file type from client*/
 	ssize_t read_ret;
+
+	/*{read a consult message from client*/	
+	struct consult_message receive_consult;
+	read_ret=read(socket_fd,&receive_consult,sizeof(receive_consult));
+	if(read_ret==-1){
+		perror("read FATAL");
+		return(4);
+	}else{
+		#ifdef DEBUG
+			printf("%u %u %u, %u %u %u %u %u %u %u %u %u\n",receive_consult.keep_owner,receive_consult.keep_group,receive_consult.keep_permission,receive_consult.owner_r,receive_consult.owner_w,receive_consult.owner_x,receive_consult.group_r,receive_consult.group_w,receive_consult.group_x,receive_consult.other_r,receive_consult.other_w,receive_consult.other_x);
+		#endif
+	}
+	/*===================================}*/
+
+	/*{read file type from client*/
 	int file_type=99;
         /* 1:regular file
 	 * 2:folder file
@@ -110,7 +124,7 @@ int receive_file(int socket_fd,char *local_path)
 	if(read_ret==-1)
 	{
 		perror("read FATAL");
-		return(1);
+		return(5);
 	}else{
 		#ifdef DEBUG
 		printf("file type:%d\n",file_type);
@@ -122,7 +136,7 @@ int receive_file(int socket_fd,char *local_path)
                         send_ack_ret=send_ack(socket_fd);
                         if(send_ack_ret!=0){           
                                 printf("send_ack FATAL");      
-                                return(2);                     
+                                return(6);                     
                         }
 			/*transfer finish*/
 			return(88);	
@@ -137,7 +151,7 @@ int receive_file(int socket_fd,char *local_path)
 	if(read_ret==-1)
 	{
 		perror("read FATAL");
-		return(3);
+		return(7);
 	}else{
 		#ifdef DEBUG
 		printf("file name:%s\n",str_p);
@@ -155,24 +169,157 @@ int receive_file(int socket_fd,char *local_path)
 	path_p=strncat(path_p,str_p,300);
 	/*=======================================*/
 
+	/*{if need,read owner info from client*/
+	uid_t file_owner_id=0;
+	if(receive_consult.keep_owner==1){
+		read_ret=read(socket_fd,&file_owner_id,sizeof(file_owner_id));
+		if(read_ret==-1){
+			perror("read FATAL");
+			return(8);
+		}else{
+			#ifdef DEBUG
+				printf("file_owner_id=%u\n",file_owner_id);	
+			#endif
+		}
+	}
+	/*===================================}*/
+
+	/*{if need,read owner info from client*/
+	gid_t file_group_id;
+	if(receive_consult.keep_group==1){
+		read_ret=read(socket_fd,&file_group_id,sizeof(file_group_id));
+		if(read_ret==-1){
+			perror("read FATAL");
+			return(9);
+		}else{
+			#ifdef DEBUG
+				printf("file_group_id=%u\n",file_group_id);	
+			#endif
+		}
+	}
+	/*===================================}*/
+
+	/*{if need,process permission*/
+	mode_t permission_mode=0;
+	#ifdef DEBUG
+		printf("1:permission_mode=%o\n",permission_mode);	
+	#endif
+
+	//initial permission_mode
+	if(file_type==1){
+		permission_mode=S_IFREG;
+		#ifdef DEBUG
+			printf("2:permission_mode=%o\n",permission_mode);	
+		#endif
+	}else if(file_type==2){
+		permission_mode=S_IFDIR;
+		#ifdef DEBUG
+			printf("3:permission_mode=%o\n",permission_mode);	
+		#endif
+	}
+
+	if(receive_consult.keep_permission==1){
+		#ifdef DEBUG
+			printf("%d %d %d, %d %d %d %d %d %d %d %d %d\n",receive_consult.keep_owner,receive_consult.keep_group,receive_consult.keep_permission,receive_consult.owner_r,receive_consult.owner_w,receive_consult.owner_x,receive_consult.group_r,receive_consult.group_w,receive_consult.group_x,receive_consult.other_r,receive_consult.other_w,receive_consult.other_x);
+		#endif
+		//owner permission
+		if(receive_consult.owner_r==1){
+			permission_mode|=S_IRUSR;
+			#ifdef DEBUG
+				printf("4:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+		if(receive_consult.owner_w==1){
+			permission_mode|=S_IWUSR;
+			#ifdef DEBUG
+				printf("5:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+		if(receive_consult.owner_x==1){
+			permission_mode|=S_IXUSR;
+			#ifdef DEBUG
+				printf("6:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+			
+		//group permission
+		if(receive_consult.group_r==1){
+			permission_mode|=S_IRGRP;
+			#ifdef DEBUG
+				printf("7:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+		if(receive_consult.group_w==1){
+			permission_mode|=S_IWGRP;
+			#ifdef DEBUG
+				printf("8:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+		if(receive_consult.group_x==1){
+			permission_mode|=S_IXGRP;
+			#ifdef DEBUG
+				printf("9:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+
+		//other permission
+		if(receive_consult.other_r==1){
+			permission_mode|=S_IROTH;
+			#ifdef DEBUG
+				printf("10:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+		if(receive_consult.other_w==1){
+			permission_mode|=S_IWOTH;
+			#ifdef DEBUG
+				printf("11:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+		if(receive_consult.other_x==1){
+			permission_mode|=S_IXOTH;
+			#ifdef DEBUG
+				printf("12:permission_mode=%o\n",permission_mode);	
+			#endif
+		}
+	}else{
+		permission_mode=S_IRUSR | S_IWUSR | S_IXUSR;
+	}
+	/*========================================}*/
+
 	/*{when file type is folder*/
 	if(file_type==2){
 		int mkdir_ret;
-		mkdir_ret=mkdir(file_path,S_IRUSR | S_IWUSR | S_IXUSR);
+		mkdir_ret=mkdir(file_path,permission_mode);
 		if(mkdir_ret==-1){
-			if(errno==EEXIST){
-
-			}else{
+			if(errno!=EEXIST){
 				perror("mkdir FATAL");
-				return(4);	
+				return(10);	
 			}
 		}
+		
+		//set owner and grouper
+		int chown_ret;
+		if(receive_consult.keep_owner==1){
+			chown_ret=chown(file_path,file_owner_id,-1);
+			if(chown_ret==-1){
+				perror("chown FATAL");
+				return(11); 
+			}
+		}
+		if(receive_consult.keep_group==1){
+			chown_ret=chown(file_path,-1,file_group_id);
+			if(chown_ret==-1){
+				perror("chown FATAL");
+				return(12); 
+			}
+		}
+
 		//send_ack
 		int send_ack_ret;              
 		send_ack_ret=send_ack(socket_fd);
 		if(send_ack_ret!=0){           
 			printf("send_ack FATAL");      
-			return(5);
+			return(13);
 		}else{
 			return(0);
 		}
@@ -188,7 +335,7 @@ int receive_file(int socket_fd,char *local_path)
 	fp=fopen(path_p,"w");
 	if(fp==NULL){
 		perror("fopen FATAL");
-		return(6);
+		return(14);
 	}
 	/*===================*/
 
@@ -198,7 +345,7 @@ int receive_file(int socket_fd,char *local_path)
 	if(read_ret==-1)
 	{
 		perror("read FATAL");
-		return(7);
+		return(15);
 	}else{
 		#ifdef DEBUG
 		printf("file size:%lld\n",file_size);
@@ -206,7 +353,7 @@ int receive_file(int socket_fd,char *local_path)
 	}
 	/*==========================*/
 
-	/*repeat read remotely and write locally*/
+	/*{repeat read remotely and write locally*/
 	size_t fwrite_ret;
 	ssize_t write_ret;
 	char file_buf[BUFSIZ_ROC];
@@ -219,7 +366,7 @@ int receive_file(int socket_fd,char *local_path)
 			read_ret=read(socket_fd,&recv_content_size,sizeof(recv_content_size));
 			if(read_ret==-1){
 				perror("read FATAL");
-				return(8);
+				return(16);
 			}else{
 				#ifdef DEBUG
 				printf("recv_content_size=%d\n",recv_content_size);
@@ -230,7 +377,7 @@ int receive_file(int socket_fd,char *local_path)
 			fwrite_ret=fwrite(file_buf,read_ret,1,fp);
 			if(fwrite_ret==0){
 				perror("fwrite FATAL");
-				return(9);
+				return(17);
 			}else{
 				#ifdef DEBUG
 				printf("fwrite locally successfully\n");
@@ -242,7 +389,7 @@ int receive_file(int socket_fd,char *local_path)
 			send_ack_ret=send_ack(socket_fd);
 			if(send_ack_ret!=0){
 				printf("send_ack FATAL");
-				return(10);
+				return(18);
 			}else{
 				#ifdef DEBUG
 				printf("send ack\n");
@@ -253,7 +400,7 @@ int receive_file(int socket_fd,char *local_path)
 			if(fclose_ret!=0)
 			{
 				perror("flcose FATAL");
-				return(11);
+				return(19);
 			}else{
 				#ifdef DEBUG
 				printf("fclose success!\n");
@@ -262,10 +409,50 @@ int receive_file(int socket_fd,char *local_path)
 			}
 		}else{
 			printf("Error happened during transfer.");
-			return(12);
+			return(20);
 		}
 	}
-	/*======================================*/
+	/*======================================}*/
+
+	/*{if need,set the permission of the file*/
+	int chmod_ret;
+	if(receive_consult.keep_permission==1){
+		chmod_ret=chmod(file_path,permission_mode);
+		if(chmod_ret==-1){
+			perror("chmod FATAL");
+			return(21);
+		}else{
+			#ifdef DEBUG
+				printf("permission_mode=%d\n",permission_mode);
+			#endif
+		}
+	}
+	/*======================================}*/
+
+	/*{set owner and grouper*/
+	int chown_ret;
+	if(receive_consult.keep_owner==1){
+		chown_ret=chown(file_path,file_owner_id,-1);
+		if(chown_ret==-1){
+			perror("chown WARNING");
+		}else{
+			#ifdef DEBUG
+				printf("chown owner to %d success.\n",file_owner_id);
+			#endif
+		}
+	}
+	if(receive_consult.keep_group==1){
+		chown_ret=chown(file_path,-1,file_group_id);
+		if(chown_ret==-1){
+			perror("chown WARNING");
+		}else{
+			#ifdef DEBUG
+				printf("chown group to %d success.\n",file_group_id);
+			#endif
+		}
+	}
+	/*=====================}*/
+
 	return(0);
 }
 

@@ -1,6 +1,6 @@
 all: rocsend rocreceive
 #which compiler
-CC = cc
+CC = cc -g
 #what libs
 LIBLIST = 
 APPENDIX = 

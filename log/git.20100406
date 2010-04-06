@@ -1,0 +1,15 @@
+roctran can keep file permission and owner info.
+
+[20100406        ]
+[roc             ]
+[change          ]
+1.add permission keeping mechanism.
+2.add owner info and group info keeping mechanism.
+3.add man info file.
+4.fix several bugs.
+[plan            ]
+1.optimize the code,and add necessary function.
+2.add the link file and fifo file process mechanism.
+3.add graphic interface,set buttons to run the program.
+4.introduct the configure/make/make install mechanism.
+5.introduct the rpm install method.
